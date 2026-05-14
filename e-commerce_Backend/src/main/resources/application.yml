@@ -1,0 +1,69 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /ecommerce
+    session:
+      timeout: 30m
+spring:
+  application:
+    name: ecommerce
+  datasource:
+    url: "jdbc:mysql://localhost:3306/ecommerce"
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  mail:
+    enabled: true
+    host: smtp.gmail.com
+    port: 587
+    username: tungtshe176201@fpt.edu.vn
+    password: fzym btqd ubsh dydv
+
+    properties:
+      mail:
+        debug: true
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: DEBUG
+      springframework:
+        transaction: TRACE
+api:
+  info:
+    title: Hung Hypebeast API
+    description: E-commerce Backend API for Hung Hypebeast
+    version: 1.0.0
+    contact:
+      name: TungTS17
+      email: tungts17@fpt.com
+  server:
+    url: ${API_SERVER_URL:http://localhost:8080}
+
+
+inventory:
+  reservation:
+    expiry-minutes: ${RESERVATION_EXPIRY_MINUTES:1}
+
+app:
+  order:
+    tracking:
+      base-url: http://localhost:8080/ecommerce/api/v1/public/orders
+
+cloudinary:
+  cloud-name: dqqxqq7d1
+  api-key: 359437932646562
+  api-secret: hwfF3IGGoqTgM1lQtZteCnXhyIY

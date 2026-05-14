@@ -1,0 +1,49 @@
+/* Lớp nền mờ phủ toàn màn hình */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Màu tối mờ */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Luôn nằm trên cùng */
+}
+
+/* Khung nội dung bảng size */
+.modal-content {
+  background: white;
+  padding: 40px;
+  border-radius: 8px;
+  position: relative;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+/* Nút đóng (X) */
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 30px;
+  cursor: pointer;
+  color: #333;
+}
+
+.size-guide-container img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Hiệu ứng cho chữ Size Guide */
+.size-guide-trigger:hover {
+  color: #757575;
+}
