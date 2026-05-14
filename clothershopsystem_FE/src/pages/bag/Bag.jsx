@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { BAG_PLACEHOLDER_IMAGE } from '../../config/media.js'
 import { fetchBagItems, removeCartLine, updateCartLineQuantity } from './service'
 
@@ -72,8 +72,8 @@ export default function Bag() {
 
       <div className="bag-layout">
         <div className="bag-left">
-          <div className="bag-head">
-            <h1>Bag</h1>
+          <div className="bag-head" style={{ marginBottom: '50px' }}>
+            <h1>Cart</h1>
           </div>
 
           {loadError ? (
@@ -166,12 +166,24 @@ export default function Bag() {
               <span>Total</span>
               <span>{total.toLocaleString()}₫</span>
             </div>
-            <button type="button" className="button button-primary summary-button">
-              Guest Checkout
-            </button>
-            <button type="button" className="button button-outline summary-button">
-              Member Checkout
-            </button>
+            {items.length === 0 ? (
+              <button type="button" className="button button-primary summary-button" disabled>
+                Guest Checkout
+              </button>
+            ) : (
+              <Link to="/checkout" className="button button-primary summary-button">
+                Guest Checkout
+              </Link>
+            )}
+            {items.length === 0 ? (
+              <button type="button" className="button button-outline summary-button" disabled>
+                Member Checkout
+              </button>
+            ) : (
+              <Link to="/checkout" className="button button-outline summary-button">
+                Member Checkout
+              </Link>
+            )}
           </div>
         </aside>
       </div>

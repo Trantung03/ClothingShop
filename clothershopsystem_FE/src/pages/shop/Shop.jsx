@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Products from '../../components/Products'
 import { fetchShopCategories, fetchShopProducts } from './service'
+import { useParams } from 'react-router-dom';
 import './Shop.css'
 const priceFilters = [
     { value: 'all', label: 'All prices' },
@@ -18,9 +19,6 @@ const sortOptions = [
     { value: 'nameDesc', label: 'Name: Z → A' },
 ]
 
-/**
- * Hàm làm phẳng cây danh mục và lưu lại mối quan hệ cha-con
- */
 const flattenCategories = (items) => {
     let flat = [{ name: 'All', label: 'All Categories', id: 'All', parentId: null }];
 
@@ -44,55 +42,53 @@ const flattenCategories = (items) => {
     return flat;
 };
 
-/** value <option> luôn string để khớp controlled <select> (API trả categoryId number). */
 const categoryOptionValue = (cat) => (cat.id === 'All' ? 'All' : String(cat.id));
 
 export default function Shop() {
+    const { categoryId } = useParams();
     const [products, setProducts] = useState([])
     const [categories, setCategories] = useState([])
-    /** Luôn 'All' hoặc string id (khớp <option value>) */
-    const [category, setCategory] = useState('All')
+    const [category, setCategory] = useState(categoryId || 'All')
     const [priceRange, setPriceRange] = useState('all')
     const [sortBy, setSortBy] = useState('priceAsc')
     const navigate = useNavigate()
 
     useEffect(() => {
         let cancelled = false
-        ;(async () => {
-            try {
-                const catsData = await fetchShopCategories()
-                if (!cancelled && catsData) {
-                    setCategories(flattenCategories(catsData))
+            ; (async () => {
+                try {
+                    const catsData = await fetchShopCategories()
+                    if (!cancelled && catsData) {
+                        setCategories(flattenCategories(catsData))
+                    }
+                } catch (error) {
+                    console.error('Lỗi tải danh mục shop:', error)
                 }
-            } catch (error) {
-                console.error('Lỗi tải danh mục shop:', error)
-            }
-        })()
+            })()
         return () => {
             cancelled = true
         }
     }, [])
 
-    /** Lọc category + nhánh do backend xử lý; refetch khi đổi category. */
     useEffect(() => {
         let cancelled = false
-        ;(async () => {
-            try {
-                const categoryId =
-                    category === 'All' ? undefined : Number.parseInt(category, 10)
-                const id =
-                    category === 'All' || Number.isNaN(categoryId)
-                        ? undefined
-                        : categoryId
-                const prodsData = await fetchShopProducts(id)
-                if (!cancelled) {
-                    setProducts(prodsData || [])
+            ; (async () => {
+                try {
+                    const categoryId =
+                        category === 'All' ? undefined : Number.parseInt(category, 10)
+                    const id =
+                        category === 'All' || Number.isNaN(categoryId)
+                            ? undefined
+                            : categoryId
+                    const prodsData = await fetchShopProducts(id)
+                    if (!cancelled) {
+                        setProducts(prodsData || [])
+                    }
+                } catch (error) {
+                    console.error('Lỗi tải sản phẩm shop:', error)
+                    if (!cancelled) setProducts([])
                 }
-            } catch (error) {
-                console.error('Lỗi tải sản phẩm shop:', error)
-                if (!cancelled) setProducts([])
-            }
-        })()
+            })()
         return () => {
             cancelled = true
         }
@@ -127,9 +123,9 @@ export default function Shop() {
         <section className="shop-page">
             <div className="shop-header">
                 <div>
-                    <p className="eyebrow">Browse products</p>
+                    <p className="eyebrow">Products</p>
                     <h1>Find your next item</h1>
-                    <p className="shop-summary">Filter by category, price, and sort order to find the best fit.</p>
+                    <p className="shop-summary">Filter to find the best fit.</p>
                 </div>
             </div>
 

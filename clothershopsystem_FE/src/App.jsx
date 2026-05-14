@@ -3,6 +3,7 @@ import Header from './components/Header'
 import Home from './pages/home/Home'
 import Shop from './pages/shop/Shop'
 import Bag from './pages/bag/Bag'
+import CheckoutPage from './pages/checkout/CheckoutPage'
 import DetailPage from './pages/detailPage/DetailPage'
 import Footer from './components/Footer'
 import './pages/home/App.css'
@@ -15,8 +16,10 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/shop/:categoryId" element={<Shop />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/bag" element={<Bag />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/detail/:id" element={<DetailPage />} />
           </Routes>
         </main>

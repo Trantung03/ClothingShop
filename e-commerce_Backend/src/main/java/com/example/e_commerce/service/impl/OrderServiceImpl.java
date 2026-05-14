@@ -86,6 +86,7 @@
             }
 
             return OrderResponse.builder()
+                    .orderId(order.getId())
                     .customerName(order.getCustomerName())
                     .customerEmail(order.getCustomerEmail())
                     .customerPhone(order.getCustomerPhone())
@@ -107,6 +108,7 @@
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new RuntimeException("can not find order"));
             return OrderResponse.builder()
+                    .orderId(order.getId())
                     .customerName(order.getCustomerName())
                     .customerEmail(order.getCustomerEmail())
                     .customerPhone(order.getCustomerPhone())
@@ -140,6 +142,7 @@
             }
 
             return OrderResponse.builder()
+                    .orderId(order.getId())
                     .customerName(order.getCustomerName())
                     .customerEmail(order.getCustomerEmail())
                     .customerPhone(order.getCustomerPhone())
