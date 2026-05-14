@@ -1,23 +1,66 @@
-import { useEffect, useMemo, useState } from 'react'
-import { fetchBagItems } from './service'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
+import { BAG_PLACEHOLDER_IMAGE } from '../../config/media.js'
+import { fetchBagItems, removeCartLine, updateCartLineQuantity } from './service'
 
 export default function Bag() {
+  const location = useLocation()
   const [items, setItems] = useState([])
+  const [busyId, setBusyId] = useState(null)
+  const [loadError, setLoadError] = useState('')
 
-  useEffect(() => {
-    const load = async () => {
+  const reload = useCallback(async () => {
+    setLoadError('')
+    try {
       const bagItems = await fetchBagItems()
       setItems(bagItems)
-      const count = bagItems.length
-      localStorage.setItem('bagCount', String(count))
-      window.dispatchEvent(new CustomEvent('bag-count-change', { detail: count }))
+    } catch (e) {
+      console.error(e)
+      setLoadError(e?.message || 'Không tải được giỏ hàng.')
+      setItems([])
     }
-    load()
   }, [])
+
+  useEffect(() => {
+    reload()
+  }, [reload, location.key])
+
+  useEffect(() => {
+    const onFocus = () => reload()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [reload])
 
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.priceValue * item.quantity, 0), [items])
   const delivery = subtotal > 5000000 ? 0 : 30000
   const total = subtotal + delivery
+
+  async function changeQty(item, nextQty) {
+    if (nextQty < 1) return
+    setBusyId(item.cartItemId)
+    try {
+      await updateCartLineQuantity(item.skuId, nextQty)
+      await reload()
+    } catch (e) {
+      console.error(e)
+      alert(e?.message || 'Không cập nhật được số lượng')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function handleRemove(item) {
+    setBusyId(item.cartItemId)
+    try {
+      await removeCartLine(item.cartItemId)
+      await reload()
+    } catch (e) {
+      console.error(e)
+      alert(e?.message || 'Không xóa được sản phẩm')
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   return (
     <section className="bag-page">
@@ -33,9 +76,34 @@ export default function Bag() {
             <h1>Bag</h1>
           </div>
 
+          {loadError ? (
+            <p className="bag-load-error" style={{ color: '#b91c1c', marginBottom: '16px' }}>
+              {loadError}
+            </p>
+          ) : null}
+
+          {!loadError && items.length === 0 ? (
+            <p className="bag-empty" style={{ color: '#666', marginBottom: '16px' }}>
+              Giỏ đang trống. Vui lòng thêm sản phẩm vào giỏ hàng
+            </p>
+          ) : null}
+
           {items.map((item) => (
-            <article key={item.id} className="bag-card">
-              <img className="bag-image" src={item.imageUrl} alt={item.name} />
+            <article key={item.cartItemId} className="bag-card">
+              <img
+                className="bag-image"
+                src={item.imageUrl}
+                alt={item.name}
+                loading="lazy"
+                decoding="async"
+                onError={(e) => {
+                  const ph = BAG_PLACEHOLDER_IMAGE
+                  if (e.currentTarget.src !== ph) {
+                    e.currentTarget.onerror = null
+                    e.currentTarget.src = ph
+                  }
+                }}
+              />
               <div className="bag-card-content">
                 <div className="bag-card-top">
                   <div>
@@ -46,11 +114,33 @@ export default function Bag() {
                   <p className="bag-card-price">{item.price}</p>
                 </div>
                 <div className="bag-card-actions">
-                  <button type="button" className="icon-button">🗑️</button>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    disabled={busyId === item.cartItemId}
+                    onClick={() => handleRemove(item)}
+                    aria-label="Remove item"
+                  >
+                    🗑️
+                  </button>
                   <div className="quantity-control">
-                    <button type="button" className="qty-button">−</button>
+                    <button
+                      type="button"
+                      className="qty-button"
+                      disabled={busyId === item.cartItemId || item.quantity <= 1}
+                      onClick={() => changeQty(item, item.quantity - 1)}
+                    >
+                      −
+                    </button>
                     <span>{item.quantity}</span>
-                    <button type="button" className="qty-button">＋</button>
+                    <button
+                      type="button"
+                      className="qty-button"
+                      disabled={busyId === item.cartItemId}
+                      onClick={() => changeQty(item, item.quantity + 1)}
+                    >
+                      ＋
+                    </button>
                   </div>
                   <button type="button" className="icon-button">♡</button>
                 </div>

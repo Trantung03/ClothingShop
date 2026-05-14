@@ -9,13 +9,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpSession;
 
 @RestController
 @RequestMapping("/api/cart")
 @RequiredArgsConstructor
+@CrossOrigin(originPatterns = {"http://localhost:*", "http://127.0.0.1:*"}, allowCredentials = "true")
 public class CartController {
 
     private final CartService cartService;

@@ -69,6 +69,9 @@ public class ProductServiceImpl implements ProductService {
         List<Sku> skuList = skuRepository.findByProduct_Id(productId);
 
         List<SkuResponse> skuResponseList = skuList.stream().map(sku -> SkuResponse.builder().skuId(sku.getId())
+                .productId(p.getId())
+                .productName(p.getName())
+                .productImageUrl(p.getImageUrl())
                 .size(sku.getSize())
                 .color(sku.getColor())
                 .price(sku.getPrice())

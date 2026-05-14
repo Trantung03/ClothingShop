@@ -11,6 +11,9 @@ import lombok.NoArgsConstructor;
 @Builder
 public class SkuResponse {
     private Long skuId;
+    private Long productId;
+    private String productName;
+    private String productImageUrl;
     private String size;
     private String color;
     private Long price;

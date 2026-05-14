@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8080/ecommerce/api'
+import { API_BASE } from '../config/api.js'
 
 export async function fetchAllCategories() {
   try {
