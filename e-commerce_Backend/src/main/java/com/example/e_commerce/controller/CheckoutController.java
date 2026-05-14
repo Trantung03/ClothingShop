@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/checkout")
 @RequiredArgsConstructor
+@CrossOrigin(originPatterns = {"http://localhost:*", "http://127.0.0.1:*"}, allowCredentials = "true")
 public class CheckoutController {
 
     private final CheckoutServiceImpl checkoutService;

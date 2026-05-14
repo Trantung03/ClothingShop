@@ -11,12 +11,8 @@ export async function fetchShopCategories() {
   }
 }
 
-/** Shop lọc theo cây category trên client — cần tải đủ SP (API mặc định size=20). */
 const SHOP_PRODUCT_PAGE_SIZE = 2000
 
-/**
- * @param {number|undefined} categoryId - undefined = tất cả; số = lọc theo category + nhánh (server).
- */
 export async function fetchShopProducts(categoryId) {
   try {
     const params = new URLSearchParams({

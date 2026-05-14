@@ -9,8 +9,8 @@ export default function Footer() {
         <button className="button button-primary">Subscribe</button>
       </div>
       <div className="footer-bottom">
-        <p>Built with React and Vite — backend coming soon.</p>
-        <p>© 2026 Nike Clone</p>
+        <p>Built with React.</p>
+        <p>© 2026 Nike </p>
       </div>
     </footer>
   )

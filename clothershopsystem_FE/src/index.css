@@ -451,6 +451,14 @@ code {
   border-radius: 999px;
 }
 
+a.summary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
 @media (max-width: 1024px) {
   .bag-layout {
     grid-template-columns: 1fr;
