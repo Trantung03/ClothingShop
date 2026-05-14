@@ -92,7 +92,7 @@ export default function DetailPage() {
           </div>
 
           <div className="detail-info">
-            <span className="detail-label">{product?.categoryName || 'Nike Collection'}</span>
+            <span className="detail-label">{product?.categoryName || 'Collection'}</span>
             <h1>{product?.name}</h1>
             <p className="detail-subtitle">{product?.description || 'No description available.'}</p>
             

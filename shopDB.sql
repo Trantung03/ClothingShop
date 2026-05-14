@@ -192,6 +192,7 @@ UNLOCK TABLES;
 -- Table structure for table `product`
 --
 
+DROP TABLE IF EXISTS `product_category`;
 DROP TABLE IF EXISTS `product`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -201,13 +202,26 @@ CREATE TABLE `product` (
   `base_price` bigint DEFAULT NULL,
   `description` text,
   `is_active` bit(1) NOT NULL DEFAULT b'1',
-  `category_id` bigint NOT NULL,
   `image_url` varchar(255) DEFAULT NULL,
   `created_at` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
-  PRIMARY KEY (`id`),
-  KEY `FK_product_category` (`category_id`),
-  CONSTRAINT `FK_product_category` FOREIGN KEY (`category_id`) REFERENCES `category` (`id`)
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `product_category`
+--
+
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `product_category` (
+  `product_id` bigint NOT NULL,
+  `category_id` bigint NOT NULL,
+  PRIMARY KEY (`product_id`,`category_id`),
+  KEY `idx_pc_category` (`category_id`),
+  CONSTRAINT `FK_pc_product` FOREIGN KEY (`product_id`) REFERENCES `product` (`id`),
+  CONSTRAINT `FK_pc_category` FOREIGN KEY (`category_id`) REFERENCES `category` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -216,8 +230,18 @@ CREATE TABLE `product` (
 
 LOCK TABLES `product` WRITE;
 /*!40000 ALTER TABLE `product` DISABLE KEYS */;
-INSERT INTO `product` VALUES (1,'Nike Air Max 270',4200000,NULL,_binary '',8,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(2,'Nike Pegasus 40',3500000,NULL,_binary '',9,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(3,'Air Jordan 1 Low',3200000,NULL,_binary '',11,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(4,'LeBron XXI',5800000,NULL,_binary '',10,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(5,'Nike Sportswear Tee',800000,NULL,_binary '',12,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(6,'Nike Dri-FIT Shorts',950000,NULL,_binary '',13,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(7,'Tech Fleece Hoodie',2800000,NULL,_binary '',14,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(8,'Nike Invincible 3',4900000,NULL,_binary '',17,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(9,'Nike Metcon 9',3800000,NULL,_binary '',18,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(10,'Jordan Stay Loyal',3100000,NULL,_binary '',11,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(11,'Nike Air Force 1',2900000,NULL,_binary '',8,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(12,'Nike Zoom Fly 5',4100000,NULL,_binary '',9,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(13,'KD16 Basketball',4400000,NULL,_binary '',10,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(14,'Nike Pro Tights',1200000,NULL,_binary '',16,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(15,'Yoga Dri-FIT Top',1100000,NULL,_binary '',16,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(16,'Air Jordan 4 Retro',6000000,NULL,_binary '',11,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(17,'Nike React Miller',3300000,NULL,_binary '',17,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(18,'Nike Challenger Shorts',850000,NULL,_binary '',13,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(19,'Nike SB Dunk Low',3500000,NULL,_binary '',8,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(20,'Elite Basketball Socks',450000,NULL,_binary '',7,'https://picsum.photos/400/400','2026-05-13 07:28:56.634315');
+INSERT INTO `product` VALUES (1,'Nike Air Max 270',4200000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(2,'Nike Pegasus 40',3500000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(3,'Air Jordan 1 Low',3200000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(4,'LeBron XXI',5800000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(5,'Nike Sportswear Tee',800000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(6,'Nike Dri-FIT Shorts',950000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(7,'Tech Fleece Hoodie',2800000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(8,'Nike Invincible 3',4900000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(9,'Nike Metcon 9',3800000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(10,'Jordan Stay Loyal',3100000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(11,'Nike Air Force 1',2900000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(12,'Nike Zoom Fly 5',4100000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(13,'KD16 Basketball',4400000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(14,'Nike Pro Tights',1200000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(15,'Yoga Dri-FIT Top',1100000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(16,'Air Jordan 4 Retro',6000000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(17,'Nike React Miller',3300000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(18,'Nike Challenger Shorts',850000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(19,'Nike SB Dunk Low',3500000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315'),(20,'Elite Basketball Socks',450000,NULL,_binary '','https://picsum.photos/400/400','2026-05-13 07:28:56.634315');
 /*!40000 ALTER TABLE `product` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Dumping data for table `product_category`
+--
+
+LOCK TABLES `product_category` WRITE;
+/*!40000 ALTER TABLE `product_category` DISABLE KEYS */;
+INSERT INTO `product_category` VALUES (1,8),(2,9),(3,11),(4,10),(5,12),(6,13),(7,14),(8,17),(9,18),(10,11),(11,8),(12,9),(13,10),(14,16),(15,16),(16,11),(17,17),(18,13),(19,8),(20,7);
+/*!40000 ALTER TABLE `product_category` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --

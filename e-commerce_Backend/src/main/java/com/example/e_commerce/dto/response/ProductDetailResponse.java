@@ -18,6 +18,7 @@ public class ProductDetailResponse {
     private String description;
     private String categoryName;
     private Long categoryId;
+    private List<CategoryBriefResponse> categories;
     private Long basePrice;
     private String imageUrl;
 
