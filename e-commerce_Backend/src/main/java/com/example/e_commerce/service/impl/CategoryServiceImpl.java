@@ -7,7 +7,9 @@ import com.example.e_commerce.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -44,5 +46,32 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         return roots;
+    }
+
+    @Override
+    public List<Long> getSelfAndDescendantCategoryIds(Long categoryId) {
+        if (categoryId == null) {
+            return List.of();
+        }
+        List<Category> all = categoryRepository.findAll();
+        Map<Long, List<Long>> childrenByParent = new HashMap<>();
+        for (Category c : all) {
+            if (c.getParent() == null) {
+                continue;
+            }
+            Long pid = c.getParent().getId();
+            childrenByParent.computeIfAbsent(pid, k -> new ArrayList<>()).add(c.getId());
+        }
+        List<Long> out = new ArrayList<>();
+        ArrayDeque<Long> queue = new ArrayDeque<>();
+        queue.add(categoryId);
+        while (!queue.isEmpty()) {
+            Long id = queue.poll();
+            out.add(id);
+            for (Long childId : childrenByParent.getOrDefault(id, List.of())) {
+                queue.add(childId);
+            }
+        }
+        return out;
     }
 }

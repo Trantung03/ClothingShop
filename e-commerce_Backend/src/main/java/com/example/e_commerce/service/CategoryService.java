@@ -8,4 +8,7 @@ import java.util.List;
 @Service
 public interface CategoryService {
     List<CategoryResponse> getAllCategories();
+
+    /** Category gốc + mọi danh mục con (theo parent_id trong DB). */
+    List<Long> getSelfAndDescendantCategoryIds(Long categoryId);
 }

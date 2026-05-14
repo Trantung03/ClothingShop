@@ -29,8 +29,8 @@ const flattenCategories = (items) => {
             flat.push({
                 name: item.name,
                 label: prefix + item.name,
-                id: item.categoryId, 
-                parentId: parentId 
+                id: item.categoryId,
+                parentId: parentId
             });
             if (item.children && item.children.length > 0) {
                 extract(item.children, prefix + '— ', item.categoryId);
@@ -44,79 +44,84 @@ const flattenCategories = (items) => {
     return flat;
 };
 
+/** value <option> luôn string để khớp controlled <select> (API trả categoryId number). */
+const categoryOptionValue = (cat) => (cat.id === 'All' ? 'All' : String(cat.id));
+
 export default function Shop() {
     const [products, setProducts] = useState([])
     const [categories, setCategories] = useState([])
-    const [category, setCategory] = useState('All') // Lưu ID của category đang chọn
+    /** Luôn 'All' hoặc string id (khớp <option value>) */
+    const [category, setCategory] = useState('All')
     const [priceRange, setPriceRange] = useState('all')
     const [sortBy, setSortBy] = useState('priceAsc')
     const navigate = useNavigate()
 
-    // 1. Tải dữ liệu ban đầu
     useEffect(() => {
-        const load = async () => {
+        let cancelled = false
+        ;(async () => {
             try {
-                const [catsData, prodsData] = await Promise.all([
-                    fetchShopCategories(),
-                    fetchShopProducts()
-                ]);
-
-                if (catsData) {
-                    setCategories(flattenCategories(catsData));
+                const catsData = await fetchShopCategories()
+                if (!cancelled && catsData) {
+                    setCategories(flattenCategories(catsData))
                 }
-                setProducts(prodsData || []);
             } catch (error) {
-                console.error("Lỗi tải dữ liệu shop:", error);
+                console.error('Lỗi tải danh mục shop:', error)
             }
+        })()
+        return () => {
+            cancelled = true
         }
-        load()
     }, [])
 
-    // 2. Logic lọc và sắp xếp sản phẩm
-    const filteredProducts = useMemo(() => {
-        // Thu thập ID của category hiện tại và toàn bộ con/cháu của nó
-        let allowedCategoryIds = [category];
-
-        if (category !== 'All') {
-            const findChildrenIds = (parentId) => {
-                const children = categories.filter(c => c.parentId === parentId);
-                children.forEach(child => {
-                    allowedCategoryIds.push(child.id);
-                    findChildrenIds(child.id); 
-                });
-            };
-            findChildrenIds(category);
+    /** Lọc category + nhánh do backend xử lý; refetch khi đổi category. */
+    useEffect(() => {
+        let cancelled = false
+        ;(async () => {
+            try {
+                const categoryId =
+                    category === 'All' ? undefined : Number.parseInt(category, 10)
+                const id =
+                    category === 'All' || Number.isNaN(categoryId)
+                        ? undefined
+                        : categoryId
+                const prodsData = await fetchShopProducts(id)
+                if (!cancelled) {
+                    setProducts(prodsData || [])
+                }
+            } catch (error) {
+                console.error('Lỗi tải sản phẩm shop:', error)
+                if (!cancelled) setProducts([])
+            }
+        })()
+        return () => {
+            cancelled = true
         }
+    }, [category])
 
+    const filteredProducts = useMemo(() => {
         return products
             .filter((product) => {
-                // Lọc theo Category (So khớp ID của sản phẩm với danh sách ID được phép)
-                if (category !== 'All') {
-                    // Tìm category object tương ứng với tên sản phẩm trả về
-                    const productCat = categories.find(c => c.name === product.categoryName);
-                    if (!productCat || !allowedCategoryIds.includes(productCat.id)) {
-                        return false;
-                    }
-                }
-
-                // Lọc theo Giá
                 switch (priceRange) {
-                    case 'under1m': return product.priceValue < 1000000;
-                    case '1m-3m': return product.priceValue >= 1000000 && product.priceValue <= 3000000;
-                    case '3m-5m': return product.priceValue > 3000000 && product.priceValue <= 5000000;
-                    case 'above5m': return product.priceValue > 5000000;
-                    default: return true;
+                    case 'under1m':
+                        return product.priceValue < 1000000
+                    case '1m-3m':
+                        return product.priceValue >= 1000000 && product.priceValue <= 3000000
+                    case '3m-5m':
+                        return product.priceValue > 3000000 && product.priceValue <= 5000000
+                    case 'above5m':
+                        return product.priceValue > 5000000
+                    default:
+                        return true
                 }
             })
             .sort((a, b) => {
-                // Sắp xếp
-                if (sortBy === 'priceAsc') return a.priceValue - b.priceValue;
-                if (sortBy === 'priceDesc') return b.priceValue - a.priceValue;
-                if (sortBy === 'nameAsc') return a.name.localeCompare(b.name);
-                if (sortBy === 'nameDesc') return b.name.localeCompare(a.name);
-                return 0;
-            });
-    }, [products, category, categories, priceRange, sortBy]);
+                if (sortBy === 'priceAsc') return a.priceValue - b.priceValue
+                if (sortBy === 'priceDesc') return b.priceValue - a.priceValue
+                if (sortBy === 'nameAsc') return a.name.localeCompare(b.name)
+                if (sortBy === 'nameDesc') return b.name.localeCompare(a.name)
+                return 0
+            })
+    }, [products, priceRange, sortBy])
 
     return (
         <section className="shop-page">
@@ -129,45 +134,47 @@ export default function Shop() {
             </div>
 
             <div className="shop-controls">
-               <div className="filter-group">
-    <label htmlFor="category-select">Category</label>
-    <select 
-        id="category-select" 
-        value={category} 
-        onChange={(event) => setCategory(event.target.value)}
-    >
-        {categories.map((cat, index) => (
-            <option key={`${cat.id}-${index}`} value={cat.id}>
-                {cat.label} 
-            </option>
-        ))}
-    </select>
-</div>
-
-                {/* Bộ lọc Giá */}
                 <div className="filter-group">
-                    <label htmlFor="price-select">Price</label>
-                    <select 
-                        id="price-select" 
-                        value={priceRange} 
-                        onChange={(e) => setPriceRange(e.target.value)}
+                    <label htmlFor="category-select">Category</label>
+                    <select
+                        id="category-select"
+                        value={category}
+                        onChange={(event) => setCategory(event.target.value)}
                     >
-                        {priceFilters.map((opt) => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        {categories.map((cat, index) => (
+                            <option key={`${cat.id}-${index}`} value={categoryOptionValue(cat)}>
+                                {cat.label}
+                            </option>
                         ))}
                     </select>
                 </div>
 
-                {/* Bộ lọc Sắp xếp */}
+                <div className="filter-group">
+                    <label htmlFor="price-select">Price</label>
+                    <select
+                        id="price-select"
+                        value={priceRange}
+                        onChange={(e) => setPriceRange(e.target.value)}
+                    >
+                        {priceFilters.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
                 <div className="filter-group">
                     <label htmlFor="sort-select">Sort by</label>
-                    <select 
-                        id="sort-select" 
-                        value={sortBy} 
+                    <select
+                        id="sort-select"
+                        value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
                     >
                         {sortOptions.map((opt) => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                            </option>
                         ))}
                     </select>
                 </div>
@@ -179,10 +186,9 @@ export default function Shop() {
                 </p>
             </div>
 
-            {/* Danh sách sản phẩm */}
-            <Products 
-                products={filteredProducts} 
-                onViewDetail={(id) => navigate(`/detail/${id}`)} 
+            <Products
+                products={filteredProducts}
+                onViewDetail={(id) => navigate(`/detail/${id}`)}
             />
         </section>
     )
