@@ -18,7 +18,7 @@ public class ProductImgServiceImpl implements ProductImgService {
     @Override
     public List<ProductImgResponse> getProductImgByProductId(Long productId) {
 
-        List<ProductImage> productImgList =productImgRepository.findByProductId(productId);
+        List<ProductImage> productImgList =productImgRepository.findByProduct_Id(productId);
         List<ProductImgResponse> productImgResponseList = productImgList.stream()
                 .map( productImage -> ProductImgResponse.builder()
                         .imageUrl(productImage.getImageUrl())

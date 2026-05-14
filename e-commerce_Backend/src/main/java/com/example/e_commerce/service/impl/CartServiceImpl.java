@@ -8,22 +8,22 @@ import com.example.e_commerce.entity.CartItem;
 import com.example.e_commerce.entity.Sku;
 import com.example.e_commerce.exception.AppException;
 import com.example.e_commerce.exception.ErrorCode;
-import com.example.e_commerce.repository.CartItemRepository;
 import com.example.e_commerce.repository.CartRepository;
 import com.example.e_commerce.repository.SkuRepository;
 import com.example.e_commerce.service.CartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CartServiceImpl implements CartService {
 
     private final CartRepository cartRepository;
-    private final CartItemRepository cartItemRepository;
     private final SkuRepository skuRepository;
 
     @Override
@@ -65,13 +65,12 @@ public class CartServiceImpl implements CartService {
                 .filter(i -> i.getSku().getId().equals(request.getSkuId()))
                 .findFirst()
                 .orElse(null);
+        int newQty = (existingItem != null ? existingItem.getQuantity() : 0) + request.getQuantity();
+        if (newQty > sku.getStockAvailable()) {
+            throw new AppException(ErrorCode.OUT_OF_STOCK);
+        }
         if (existingItem != null) {
-            if(sku.getStockAvailable()>request.getQuantity()) {
-                existingItem.setQuantity(existingItem.getQuantity() + request.getQuantity());
-            }
-            else{
-                throw new AppException(ErrorCode.OUT_OF_STOCK);
-            }
+            existingItem.setQuantity(newQty);
         } else {
             CartItem item = new CartItem();
             item.setCart(cart);
@@ -97,13 +96,11 @@ public class CartServiceImpl implements CartService {
                 .filter(i -> i.getSku().getId().equals(request.getSkuId()))
                 .findFirst()
                 .orElse(null);
+        if (request.getQuantity() > sku.getStockAvailable()) {
+            throw new AppException(ErrorCode.OUT_OF_STOCK);
+        }
         if (existingItem != null) {
-            if(sku.getStockAvailable()>sku.getStockAvailable() - request.getQuantity()) {            existingItem.setQuantity(request.getQuantity());
-                existingItem.setQuantity(request.getQuantity());
-            }
-            else{
-                throw new AppException(ErrorCode.OUT_OF_STOCK);
-            }
+            existingItem.setQuantity(request.getQuantity());
         } else {
             CartItem item = new CartItem();
             item.setCart(cart);
@@ -121,17 +118,13 @@ public class CartServiceImpl implements CartService {
     @Override
     public void removeItem(String sessionId, Long cartItemId) {
         Cart cart = cartRepository.findBySessionId(sessionId).orElseThrow(() -> new AppException(ErrorCode.CART_NOT_FOUND));
-        Sku sku = skuRepository.findById(cartItemId).orElseThrow(() -> new AppException(ErrorCode.SKU_NOT_FOUND));
-        CartItem existingItem = cart.getItems().stream()
-                .filter(i -> i.getSku().getId().equals(cartItemId))
+        CartItem toRemove = cart.getItems().stream()
+                .filter(i -> i.getId().equals(cartItemId))
                 .findFirst()
-                .orElse(null);
-        if (existingItem == null) {
-            throw new AppException(ErrorCode.ITEM_NOT_FOUND_IN_CART);
-        } else {
-            cart.getItems().remove(existingItem);
-            cartRepository.save(cart);
-        }
+                .orElseThrow(() -> new AppException(ErrorCode.ITEM_NOT_FOUND_IN_CART));
+        cart.getItems().remove(toRemove);
+        cart.setUpdatedAt(LocalDateTime.now());
+        cartRepository.save(cart);
     }
 
     @Override

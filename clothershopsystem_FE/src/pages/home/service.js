@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8080/ecommerce/api'
+import { API_BASE } from '../../config/api.js'
 
 export async function fetchCategories() {
   try {
@@ -26,7 +26,7 @@ export async function fetchProducts() {
         id: prod.productId,
         name: prod.name,
         sub: prod.categoryName || 'No category',
-        price: prod.price != null ? `${prod.price.toLocaleString()}₫` : 'N/A',
+        price: prod.price != null ? `${prod.price.toLocaleString()}VND` : 'N/A',
         badge: 'New',
         imageUrl: prod.imageUrl,
       }))
