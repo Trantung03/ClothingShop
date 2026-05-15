@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { fetchBagItems, syncBagCountFromCart } from '../bag/service'
-import { createOrder, prepareCheckout } from './service'
+import { createOrder, prepareCheckout, verifyReservation } from './service'
 import './CheckoutPage.css'
 
 const PHONE_REGEX = /^(\+84|0)[0-9]{9,10}$/
@@ -10,7 +10,7 @@ function fieldError(form, touched, key, message) {
   if (!touched[key]) return null
   const v = form[key]
   if (key === 'customerPhone' && v && !PHONE_REGEX.test(v.trim())) {
-    return 'Số điện thoại: dùng 0xxxxxxxxx hoặc +84xxxxxxxxx (9–10 số sau mã vùng).'
+    return 'Phone number: use 0xxxxxxxxx or +84xxxxxxxxx (9–10 digits after the area code).'
   }
   if (!v || !String(v).trim()) return message
   return null
@@ -21,6 +21,9 @@ export default function CheckoutPage() {
   const [items, setItems] = useState([])
   const [loadingBag, setLoadingBag] = useState(true)
   const [prepareNote, setPrepareNote] = useState('')
+  const [stockModalMessage, setStockModalMessage] = useState('')
+  const [reservationSessionId, setReservationSessionId] = useState(null)
+  const [reservationExpiresAt, setReservationExpiresAt] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [successOrder, setSuccessOrder] = useState(null)
@@ -34,31 +37,60 @@ export default function CheckoutPage() {
   })
   const [touched, setTouched] = useState({})
 
-  const loadBag = useCallback(async () => {
-    setLoadingBag(true)
-    setSubmitError('')
-    try {
-      const bagItems = await fetchBagItems()
-      setItems(bagItems)
-    } catch (e) {
-      console.error(e)
-      setItems([])
-    } finally {
-      setLoadingBag(false)
+  useEffect(() => {
+    let cancelled = false
+
+    void (async () => {
+      setLoadingBag(true)
+      setSubmitError('')
+      try {
+        const bagItems = await fetchBagItems()
+        if (!cancelled) setItems(bagItems)
+      } catch (e) {
+        console.error(e)
+        if (!cancelled) setItems([])
+      } finally {
+        if (!cancelled) setLoadingBag(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
     }
   }, [])
 
   useEffect(() => {
-    loadBag()
-  }, [loadBag])
+    const onFocus = () => {
+      void (async () => {
+        setLoadingBag(true)
+        setSubmitError('')
+        try {
+          const bagItems = await fetchBagItems()
+          setItems(bagItems)
+        } catch (e) {
+          console.error(e)
+          setItems([])
+        } finally {
+          setLoadingBag(false)
+        }
+      })()
+    }
+
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [])
 
   useEffect(() => {
     if (loadingBag || items.length === 0) return
     let cancelled = false
       ; (async () => {
         try {
-          await prepareCheckout()
-          if (!cancelled) setPrepareNote('')
+          const res = await prepareCheckout()
+          if (!cancelled) {
+            setPrepareNote('')
+            setReservationSessionId(res?.sessionId || null)
+            setReservationExpiresAt(res?.expiresAt || null)
+          }
         } catch (e) {
           if (!cancelled) setPrepareNote(e?.message || '')
         }
@@ -71,6 +103,15 @@ export default function CheckoutPage() {
   const subtotal = useMemo(() => items.reduce((s, i) => s + i.priceValue * i.quantity, 0), [items])
   const delivery = subtotal > 5000000 ? 0 : 30000
   const total = subtotal + delivery
+  const reservationExpiresText = reservationExpiresAt ? new Date(reservationExpiresAt).toLocaleString() : ''
+
+  function openStockModal(message) {
+    setStockModalMessage(message)
+  }
+
+  function closeStockModal() {
+    setStockModalMessage('')
+  }
 
   function setField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -78,14 +119,14 @@ export default function CheckoutPage() {
 
   const errors = useMemo(
     () => ({
-      customerName: fieldError(form, touched, 'customerName', 'Vui lòng nhập họ và tên.'),
-      customerPhone: fieldError(form, touched, 'customerPhone', 'Vui lòng nhập số điện thoại.'),
+      customerName: fieldError(form, touched, 'customerName', 'Please enter your full name.'),
+      customerPhone: fieldError(form, touched, 'customerPhone', 'Please enter your phone number.'),
       customerEmail:
         touched.customerEmail &&
           (!form.customerEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail.trim()))
-          ? 'Email không hợp lệ.'
+          ? 'Invalid email address.'
           : null,
-      shippingAddress: fieldError(form, touched, 'shippingAddress', 'Vui lòng nhập địa chỉ giao hàng.'),
+      shippingAddress: fieldError(form, touched, 'shippingAddress', 'Please enter your shipping address.'),
     }),
     [form, touched],
   )
@@ -106,18 +147,29 @@ export default function CheckoutPage() {
     const addrOk = form.shippingAddress.trim()
 
     if (!nameOk || !phoneOk || !emailOk || !addrOk) {
-      setSubmitError('Vui lòng kiểm tra lại thông tin.')
+      setSubmitError('Please check your information again.')
       return
     }
 
     if (items.length === 0) {
-      setSubmitError('Giỏ hàng trống.')
+      setSubmitError('Your cart is empty.')
       return
     }
 
     setSubmitting(true)
     setSubmitError('')
     try {
+      // verify reservation before creating order
+      if (reservationSessionId) {
+        const ok = await verifyReservation(reservationSessionId)
+        if (!ok) {
+          const message = 'Insufficient stock in the warehouse or the reservation has expired.'
+          setSubmitError(message)
+          openStockModal(message)
+          setSubmitting(false)
+          return
+        }
+      }
       const payload = {
         customerName: form.customerName.trim(),
         customerPhone: form.customerPhone.trim(),
@@ -129,7 +181,11 @@ export default function CheckoutPage() {
       setSuccessOrder(order)
       syncBagCountFromCart({ items: [] })
     } catch (err) {
-      setSubmitError(err?.message || 'Đặt hàng thất bại.')
+      const msg = err?.message || 'Order failed.'
+      setSubmitError(msg)
+      if (msg.toLowerCase().includes('out of stock') || msg.toLowerCase().includes('out_of_stock')) {
+        openStockModal('Insufficient stock in the warehouse.')
+      }
     } finally {
       setSubmitting(false)
     }
@@ -139,18 +195,18 @@ export default function CheckoutPage() {
     return (
       <section className="checkout-page">
         <div className="checkout-success">
-          <h2>Đặt hàng thành công</h2>
+          <h2>Order placed successfully</h2>
           <p>
-            Mã đơn: <strong>#{successOrder.orderId ?? '—'}</strong>
+            Order ID: <strong>#{successOrder.orderId ?? '—'}</strong>
           </p>
-          <p>Tổng thanh toán: {Number(successOrder.totalAmount ?? 0).toLocaleString()}₫</p>
-          <p>Chúng tôi đã ghi nhận phương thức: {successOrder.paymentMethod}. Bạn có thể nhận email xác nhận (nếu cấu hình SMTP đang bật).</p>
+          <p>Total payment: {Number(successOrder.totalAmount ?? 0).toLocaleString()}₫</p>
+          <p>Payment method: {successOrder.paymentMethod}. You may receive a confirmation email if SMTP is enabled.</p>
           <div className="checkout-success-actions">
             <Link to="/" className="button button-primary">
-              Tiếp tục mua sắm
+              Continue shopping
             </Link>
             <Link to="/bag" className="button button-outline">
-              Xem giỏ hàng
+              View cart
             </Link>
           </div>
         </div>
@@ -160,9 +216,26 @@ export default function CheckoutPage() {
 
   return (
     <section className="checkout-page">
+      {stockModalMessage ? (
+        <div className="modal-overlay" onClick={closeStockModal} role="presentation">
+          <div className="modal-content checkout-modal" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="modal-close" onClick={closeStockModal} aria-label="Close notification">
+              &times;
+            </button>
+            <div className="checkout-modal-body">
+              <h2>Notice</h2>
+              <p>{stockModalMessage}</p>
+              <button type="button" className="checkout-modal-button" onClick={closeStockModal}>
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="checkout-banner">
         <p>
-          <strong>CHECKOUT</strong> — Điền thông tin giao hàng. Miễn phí vận chuyển từ 5.000.000₫.
+          <strong>CHECKOUT</strong> — Enter your shipping information. Free shipping on orders over 5,000,000₫.
         </p>
       </div>
 
@@ -173,18 +246,25 @@ export default function CheckoutPage() {
       <div className="checkout-layout">
         <div className="checkout-main">
           <div className="checkout-head">
-            <h1 style={{ marginBottom: '50px' }}>Shipping & payment</h1>
+            <h1 style={{ marginBottom: '50px' }}>Shipping & Payment</h1>
             <p className="checkout-sub">Your information will only be used for delivery and contact purposes.</p>
           </div>
 
+          {reservationExpiresText ? (
+            <p className="checkout-sub" style={{ marginTop: -12 }}>
+              Reservation expires at <strong>{reservationExpiresText}</strong>.
+            </p>
+          ) : null}
+
           {loadingBag ? (
-            <p className="checkout-sub">Loading Cart…</p>
+            <p className="checkout-sub">Loading cart…</p>
           ) : items.length === 0 ? (
             <div className="checkout-form-card">
               <p className="checkout-sub" style={{ marginBottom: 16 }}>
-                Your shopping cart is empty. Add more products before checkout.              </p>
+                Your shopping cart is empty. Add more products before checkout.
+              </p>
               <Link to="/" className="button button-primary">
-                Về cửa hàng
+                Go to store
               </Link>
             </div>
           ) : (
@@ -196,7 +276,7 @@ export default function CheckoutPage() {
               ) : null}
 
               <div className="checkout-field">
-                <label htmlFor="customerName">Fullname</label>
+                <label htmlFor="customerName">Full name</label>
                 <input
                   id="customerName"
                   name="customerName"
@@ -215,12 +295,12 @@ export default function CheckoutPage() {
                   name="customerPhone"
                   type="tel"
                   autoComplete="tel"
-                  placeholder="0912345678 hoặc +84912345678"
+                  placeholder="0912345678 or +84912345678"
                   value={form.customerPhone}
                   onChange={(e) => setField('customerPhone', e.target.value)}
                   onBlur={() => setTouched((t) => ({ ...t, customerPhone: true }))}
                 />
-                <p className="checkout-field-hint">Format: 0xxxxxxxxx or +84xxxxxxxxx (correct backend rules).</p>
+                <p className="checkout-field-hint">Format: 0xxxxxxxxx or +84xxxxxxxxx (matches backend rules).</p>
                 {errors.customerPhone ? <p className="checkout-field-error">{errors.customerPhone}</p> : null}
               </div>
 
@@ -239,7 +319,7 @@ export default function CheckoutPage() {
               </div>
 
               <div className="checkout-field">
-                <label htmlFor="shippingAddress">Delivery address</label>
+                <label htmlFor="shippingAddress">Shipping address</label>
                 <textarea
                   id="shippingAddress"
                   name="shippingAddress"
@@ -265,7 +345,7 @@ export default function CheckoutPage() {
                     />
                     <span>
                       COD — Pay when you receive the order
-                      <small>Delivery, cash on delivery.</small>
+                      <small>Cash on delivery.</small>
                     </span>
                   </label>
                   <label className={`checkout-pay-option ${form.paymentMethod === 'BANK_TRANSFER' ? 'selected' : ''}`}>
@@ -278,7 +358,7 @@ export default function CheckoutPage() {
                     />
                     <span>
                       Bank Transfer
-                      <small>You will receive transfer instructions via email (if email notifications are enabled).</small>
+                      <small>You will receive transfer instructions by email if notifications are enabled.</small>
                     </span>
                   </label>
                 </div>

@@ -29,9 +29,18 @@ export async function prepareCheckout() {
   const response = await sessionFetch('/checkout', { method: 'POST' })
   const data = await parseResponseJson(response)
   if (!response.ok) {
-    throw new Error(data.message || 'Không chuẩn bị được thanh toán')
+    throw new Error(data.message || 'Unable to prepare checkout')
   }
   return data.result
+}
+
+export async function verifyReservation(sessionId) {
+  const response = await sessionFetch(`/checkout/verify/${sessionId}`, { method: 'GET' })
+  const data = await parseResponseJson(response)
+  if (!response.ok) {
+    throw new Error(data.message || 'Stock verification failed')
+  }
+  return Boolean(data.result)
 }
 
 export async function createOrder(payload) {
@@ -41,7 +50,7 @@ export async function createOrder(payload) {
   })
   const data = await parseResponseJson(response)
   if (!response.ok) {
-    throw new Error(data.message || 'Đặt hàng thất bại')
+    throw new Error(data.message || 'Order failed')
   }
   return data.result
 }

@@ -16,6 +16,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +33,10 @@ public class CartServiceImpl implements CartService {
     @Override
     public CartResponse getCart(String sessionId) {
         Cart cart = getOrCreateCart(sessionId);
+        if (normalizeCartItems(cart)) {
+            cart.setUpdatedAt(LocalDateTime.now());
+            cartRepository.save(cart);
+        }
         return mapToResponse(cart);
     }
 
@@ -61,6 +69,8 @@ public class CartServiceImpl implements CartService {
 
         Sku sku = skuRepository.findById(request.getSkuId()).orElseThrow(() -> new AppException(ErrorCode.SKU_NOT_FOUND));
 
+        normalizeCartItems(cart);
+
         CartItem existingItem = cart.getItems().stream()
                 .filter(i -> i.getSku().getId().equals(request.getSkuId()))
                 .findFirst()
@@ -91,6 +101,8 @@ public class CartServiceImpl implements CartService {
 
         Sku sku = skuRepository.findById(request.getSkuId()).orElseThrow(() -> new AppException(ErrorCode.SKU_NOT_FOUND));
 
+        normalizeCartItems(cart);
+
 
         CartItem existingItem = cart.getItems().stream()
                 .filter(i -> i.getSku().getId().equals(request.getSkuId()))
@@ -113,6 +125,34 @@ public class CartServiceImpl implements CartService {
         cartRepository.save(cart);
         return mapToResponse(cart);
 
+    }
+
+    private boolean normalizeCartItems(Cart cart) {
+        Map<Long, CartItem> itemsBySku = new LinkedHashMap<>();
+        List<CartItem> itemsToRemove = new ArrayList<>();
+
+        for (CartItem item : cart.getItems()) {
+            if (item.getSku() == null || item.getSku().getId() == null) {
+                continue;
+            }
+
+            Long skuId = item.getSku().getId();
+            CartItem keeper = itemsBySku.get(skuId);
+            if (keeper == null) {
+                itemsBySku.put(skuId, item);
+                continue;
+            }
+
+            keeper.setQuantity(keeper.getQuantity() + item.getQuantity());
+            itemsToRemove.add(item);
+        }
+
+        if (itemsToRemove.isEmpty()) {
+            return false;
+        }
+
+        cart.getItems().removeAll(itemsToRemove);
+        return true;
     }
 
     @Override

@@ -60,9 +60,17 @@ public class InventoryServiceImpl implements InventoryService {
         List<InventoryReservation> reservations = reservationRepository
                 .findBySessionIdAndStatus(sessionId, ReservationStatus.RESERVED);
 
+        if (reservations == null || reservations.isEmpty()) {
+            throw new AppException(ErrorCode.ORDER_EXPIRED);
+        }
+
         for (InventoryReservation reservation : reservations) {
             Sku sku = skuRepository.findByIdWithLock(reservation.getSkuId())
-                    .orElseThrow(() -> new RuntimeException("Variant not found"));
+                    .orElseThrow(() -> new AppException(ErrorCode.SKU_NOT_FOUND));
+
+            if (sku.getStockAvailable() < reservation.getQuantity()) {
+                throw new AppException(ErrorCode.OUT_OF_STOCK);
+            }
 
             sku.setStockAvailable(sku.getStockAvailable() - reservation.getQuantity());
             skuRepository.save(sku);

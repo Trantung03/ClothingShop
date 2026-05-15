@@ -26,7 +26,9 @@ const cartFetch = (path, options = {}) => {
 }
 
 export function syncBagCountFromCart(cart) {
-  const count = cart?.items?.length ?? 0
+  const count = Array.isArray(cart?.items)
+    ? cart.items.reduce((sum, item) => sum + Number(item?.quantity || 0), 0)
+    : 0
   localStorage.setItem('bagCount', String(count))
   window.dispatchEvent(new CustomEvent('bag-count-change', { detail: count }))
 }
@@ -58,7 +60,7 @@ export async function fetchCartRaw() {
   const response = await cartFetch('/cart')
   const data = await parseResponseJson(response)
   if (!response.ok) {
-    throw new Error(data.message || 'Không tải được giỏ hàng')
+    throw new Error(data.message || 'Unable to load cart')
   }
   return data.result
 }
@@ -70,7 +72,7 @@ export async function addToCart(skuId, quantity = 1) {
   })
   const data = await parseResponseJson(response)
   if (!response.ok) {
-    throw new Error(data.message || 'Thêm vào giỏ thất bại')
+    throw new Error(data.message || 'Failed to add item to cart')
   }
   return data.result
 }
@@ -82,7 +84,7 @@ export async function updateCartLineQuantity(skuId, quantity) {
   })
   const data = await parseResponseJson(response)
   if (!response.ok) {
-    throw new Error(data.message || 'Cập nhật số lượng thất bại')
+    throw new Error(data.message || 'Failed to update quantity')
   }
   return data.result
 }
@@ -90,14 +92,14 @@ export async function updateCartLineQuantity(skuId, quantity) {
 export async function removeCartLine(cartItemId) {
   const id = Number(cartItemId)
   if (!Number.isFinite(id) || id <= 0) {
-    throw new Error('Mã dòng giỏ không hợp lệ')
+    throw new Error('Invalid cart line ID')
   }
   const response = await cartFetch(`/cart/items/${id}`, {
     method: 'DELETE',
   })
   const data = await parseResponseJson(response)
   if (!response.ok) {
-    throw new Error(data.message || 'Xóa sản phẩm thất bại')
+    throw new Error(data.message || 'Failed to remove item')
   }
   return data.result
 }
@@ -118,7 +120,7 @@ export async function fetchBagItems() {
       const quantity = item.quantity ?? 0
       const sku = skuId != null ? await fetchSkuDetail(skuId) : null
       const priceValue = sku?.price ?? 0
-      const name = sku?.productName || 'Sản phẩm'
+      const name = sku?.productName || 'Product'
       let imageRaw = sku?.productImageUrl
       if (!hasText(imageRaw) && sku?.productId != null) {
         imageRaw = await fetchFirstProductGalleryImage(sku.productId)
