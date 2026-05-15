@@ -143,15 +143,15 @@ export default function DetailPage() {
   async function handleAddToBag() {
     setAddError('')
     if (hasColorDimension && !norm(selectedColor)) {
-      setAddError('Chọn màu trước khi thêm vào giỏ.')
+      setAddError('Select a color before adding to cart.')
       return
     }
     if (!norm(selectedSize)) {
-      setAddError('Chọn size trước khi thêm vào giỏ.')
+      setAddError('Select a size before adding to cart.')
       return
     }
     if (!selectedSku?.skuId) {
-      setAddError('Màu và size không khớp với biến thể đang có.')
+      setAddError('The selected color and size do not match an available variant.')
       return
     }
     setAdding(true)
@@ -159,7 +159,7 @@ export default function DetailPage() {
       const cart = await addToCart(selectedSku.skuId, 1)
       syncBagCountFromCart(cart)
     } catch (e) {
-      setAddError(e?.message || 'Không thêm được vào giỏ.')
+      setAddError(e?.message || 'Unable to add to cart.')
     } finally {
       setAdding(false)
     }
@@ -223,25 +223,28 @@ export default function DetailPage() {
                   <p className="label-text">Select Color</p>
                 </div>
                 <div className="detail-swatches" role="group" aria-label="Product colors">
-                  {colorOptions.map((color) => (
-                    <button
-                      key={colorKey(color)}
-                      type="button"
-                      className={`swatch-button color-swatch ${colorKey(selectedColor) === colorKey(color) ? 'selected' : ''}`}
-                      title={color}
-                      aria-label={`Color ${color}`}
-                      aria-pressed={colorKey(selectedColor) === colorKey(color)}
-                      onClick={() => selectColor(color)}
-                    >
-                      <span className="swatch-color-fill" style={{ background: swatchBackground(color) }} />
-                    </button>
-                  ))}
-                  <button type="button" className="swatch-button design-button" disabled aria-disabled="true">
-                    <span>Customize</span>
+                  {colorOptions.map((color) => {
+                    const isSelected = colorKey(selectedColor) === colorKey(color)
+                    return (
+                      <button
+                        key={colorKey(color)}
+                        type="button"
+                        className={`size-button ${isSelected ? 'selected' : ''}`}
+                        title={color}
+                        aria-label={`Color ${color}`}
+                        aria-pressed={isSelected}
+                        onClick={() => selectColor(color)}
+                      >
+                        {color}
+                      </button>
+                    )
+                  })}
+                  <button type="button" className="size-button" disabled aria-disabled="true" title="Customize">
+                    Customize
                   </button>
                 </div>
                 <p className="detail-selected-variant">
-                  {norm(selectedColor) ? `Màu: ${selectedColor}` : 'Chọn màu để xem size phù hợp.'}
+                  {norm(selectedColor) ? `Selected color: ${selectedColor}` : 'Select a color to see matching sizes.'}
                 </p>
               </>
             ) : null}
@@ -258,7 +261,7 @@ export default function DetailPage() {
             <div className="detail-size-grid">
               {hasColorDimension && !norm(selectedColor) ? (
                 <p className="label-text" style={{ gridColumn: '1 / -1', fontWeight: 400 }}>
-                  Chọn màu trước để chọn size.
+                  Select a color first to choose a size.
                 </p>
               ) : sizeOptions.length > 0 ? (
                 sizeOptions.map((size) => {
@@ -277,7 +280,7 @@ export default function DetailPage() {
                   )
                 })
               ) : (
-                <p>Out of stock</p>
+                <p>No sizes available</p>
               )}
             </div>
 
@@ -291,7 +294,7 @@ export default function DetailPage() {
                 {adding ? 'Adding…' : 'Add to Bag'}
               </button>
               <button type="button" className="button button-outline detail-fav">
-                Favourite ♡
+                Favorite ♡
               </button>
             </div>
             {addError ? (

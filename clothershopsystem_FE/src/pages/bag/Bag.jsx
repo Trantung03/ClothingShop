@@ -2,12 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { BAG_PLACEHOLDER_IMAGE } from '../../config/media.js'
 import { fetchBagItems, removeCartLine, updateCartLineQuantity } from './service'
+import './Bag.css'
 
 export default function Bag() {
   const location = useLocation()
   const [items, setItems] = useState([])
   const [busyId, setBusyId] = useState(null)
   const [loadError, setLoadError] = useState('')
+  const [noticeMessage, setNoticeMessage] = useState('')
 
   const reload = useCallback(async () => {
     setLoadError('')
@@ -16,7 +18,7 @@ export default function Bag() {
       setItems(bagItems)
     } catch (e) {
       console.error(e)
-      setLoadError(e?.message || 'Không tải được giỏ hàng.')
+      setLoadError(e?.message || 'Unable to load your cart.')
       setItems([])
     }
   }, [])
@@ -35,6 +37,14 @@ export default function Bag() {
   const delivery = subtotal > 5000000 ? 0 : 30000
   const total = subtotal + delivery
 
+  function openNotice(message) {
+    setNoticeMessage(message)
+  }
+
+  function closeNotice() {
+    setNoticeMessage('')
+  }
+
   async function changeQty(item, nextQty) {
     if (nextQty < 1) return
     setBusyId(item.cartItemId)
@@ -43,7 +53,7 @@ export default function Bag() {
       await reload()
     } catch (e) {
       console.error(e)
-      alert(e?.message || 'Không cập nhật được số lượng')
+      openNotice(e?.message || 'Unable to update quantity.')
     } finally {
       setBusyId(null)
     }
@@ -56,7 +66,7 @@ export default function Bag() {
       await reload()
     } catch (e) {
       console.error(e)
-      alert(e?.message || 'Không xóa được sản phẩm')
+      openNotice(e?.message || 'Unable to remove the item.')
     } finally {
       setBusyId(null)
     }
@@ -64,6 +74,23 @@ export default function Bag() {
 
   return (
     <section className="bag-page">
+      {noticeMessage ? (
+        <div className="modal-overlay" onClick={closeNotice} role="presentation">
+          <div className="modal-content bag-modal" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="modal-close" onClick={closeNotice} aria-label="Close notification">
+              &times;
+            </button>
+            <div className="bag-modal-body">
+              <h2>Notice</h2>
+              <p>{noticeMessage}</p>
+              <button type="button" className="bag-modal-button" onClick={closeNotice}>
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="bag-banner">
         <p>
           <strong>FREE DELIVERY</strong> Applies to orders of 5.000.000₫ or more. <span>View details.</span>
@@ -84,7 +111,7 @@ export default function Bag() {
 
           {!loadError && items.length === 0 ? (
             <p className="bag-empty" style={{ color: '#666', marginBottom: '16px' }}>
-              Giỏ đang trống. Vui lòng thêm sản phẩm vào giỏ hàng
+              Your cart is empty. Please add products to your cart.
             </p>
           ) : null}
 

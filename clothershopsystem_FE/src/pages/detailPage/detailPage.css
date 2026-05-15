@@ -58,11 +58,33 @@
   flex-shrink: 0;
 }
 
+.swatch-button.color-swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #111827;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+}
+
 .swatch-button.color-swatch .swatch-color-fill {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
+  display: none;
+}
+
+.swatch-button.color-swatch.text-swatch:hover {
+  background: #f8fafc;
+}
+
+.swatch-button.color-swatch.selected {
+  border-color: #111827;
+  background: #f3f4f6;
 }
 
 .swatch-button.color-swatch.selected {
