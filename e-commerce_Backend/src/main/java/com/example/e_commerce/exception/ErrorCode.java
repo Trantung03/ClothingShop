@@ -11,8 +11,10 @@ public enum ErrorCode {
     ORDER_EXPIRED(409, "Order expired"),
     CART_EMPTY(400, "Cart is empty"),
     ITEM_NOT_FOUND_IN_CART(401, "Item not found in the cart"),
-    INVALID_CHECKOUT_TOKEN(403, "Invalid checkout token"),;
-
+    INVALID_CHECKOUT_TOKEN(403, "Invalid checkout token"),
+    ORDER_NOT_FOUND(404, "Order not found"),
+    INVALID_ORDER_STATE(400, "Invalid order state"),
+    INVALID_PAYMENT_METHOD(400, "Invalid payment method");
 
     private final int code;
     private final String message;

@@ -71,7 +71,17 @@
 
             order.setTotalAmount(totalAmount);
 
-            inventoryService.confirmStock(sesionId);
+            // Save session id for potential later confirmation (bank transfer)
+            order.setSessionId(sesionId);
+
+            // If payment is COD, confirm stock immediately. For BANK_TRANSFER, keep reservation and mark payment pending.
+            if (order.getPaymentMethod() == PaymentMethod.COD) {
+                inventoryService.confirmStock(sesionId);
+                order.setPaymentStatus(PaymentStatus.PAID);
+            } else {
+                // BANK_TRANSFER: keep PaymentStatus.PENDING, reservation already created in prepareCheckout
+                order.setPaymentStatus(PaymentStatus.PENDING);
+            }
 
             order = orderRepository.save(order);
 
@@ -82,7 +92,7 @@
             try {
                 emailService.sendOrderConfirmation(order);
             } catch (Exception e) {
-                throw new AppException(ErrorCode.OUT_OF_STOCK);
+                // do not fail order on email errors
             }
 
             return OrderResponse.builder()
@@ -152,6 +162,45 @@
                     .paymentMethod(String.valueOf(order.getPaymentMethod()))
                     .paymentStatus(String.valueOf(order.getPaymentStatus()))
                     .items(order.getItems().stream().map((a)->OrderItemResponse.builder().skuId(a.getSku().getId())
+                            .quantity(a.getQuantity())
+                            .priceAtPurchase(a.getPrice())
+                            .totalPrice(a.getPrice() * a.getQuantity()).build()).toList())
+                    .createdAt(order.getCreatedAt()).build();
+        }
+
+        @Override
+        public OrderResponse confirmPayment(Long orderId, String paymentReference) {
+            Order order = orderRepository.findById(orderId).orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+            if (order.getPaymentStatus() != PaymentStatus.PENDING) {
+                throw new AppException(ErrorCode.INVALID_ORDER_STATE);
+            }
+            if (order.getPaymentMethod() != PaymentMethod.BANK_TRANSFER) {
+                throw new AppException(ErrorCode.INVALID_PAYMENT_METHOD);
+            }
+
+            // confirm stock using stored session id
+            inventoryService.confirmStock(order.getSessionId());
+            order.setPaymentStatus(PaymentStatus.PAID);
+            order.setStatus(OrderStatus.CONFIRMED);
+            order.setPaymentReference(paymentReference);
+            order = orderRepository.save(order);
+
+            try {
+                emailService.sendOrderStatusUpdate(order, "PENDING", "CONFIRMED");
+            } catch (Exception ignored) {
+            }
+
+            return OrderResponse.builder()
+                    .orderId(order.getId())
+                    .customerName(order.getCustomerName())
+                    .customerEmail(order.getCustomerEmail())
+                    .customerPhone(order.getCustomerPhone())
+                    .shippingAddress(order.getShippingAddress())
+                    .totalAmount(order.getTotalAmount())
+                    .status(order.getStatus())
+                    .paymentMethod(String.valueOf(order.getPaymentMethod()))
+                    .paymentStatus(String.valueOf(order.getPaymentStatus()))
+                    .items(order.getItems().stream().map((a) -> OrderItemResponse.builder().skuId(a.getSku().getId())
                             .quantity(a.getQuantity())
                             .priceAtPurchase(a.getPrice())
                             .totalPrice(a.getPrice() * a.getQuantity()).build()).toList())

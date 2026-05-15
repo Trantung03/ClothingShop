@@ -192,6 +192,46 @@ export default function CheckoutPage() {
   }
 
   if (successOrder) {
+    // If bank transfer, show transfer instructions
+    if ((successOrder.paymentMethod || '').toUpperCase() === 'BANK_TRANSFER' && (successOrder.paymentStatus || '').toUpperCase() === 'PENDING') {
+      const bankDetails = {
+        bankName: 'ACME Bank',
+        accountName: 'ClotherShop Demo',
+        accountNumber: '0123456789',
+        notePrefix: 'ORDER',
+        expireHours: 24,
+      }
+      return (
+        <section className="checkout-page">
+          <div className="checkout-success">
+            <h2>Order created — Bank Transfer</h2>
+            <p>
+              Order ID: <strong>#{successOrder.orderId ?? '—'}</strong>
+            </p>
+            <p>Total payment: {Number(successOrder.totalAmount ?? 0).toLocaleString()}₫</p>
+            <div className="bank-instructions" style={{ textAlign: 'left', marginTop: 16 }}>
+              <p>Please transfer the total amount within <strong>{bankDetails.expireHours} hours</strong> to the following bank account:</p>
+              <ul>
+                <li><strong>Bank:</strong> {bankDetails.bankName}</li>
+                <li><strong>Account name:</strong> {bankDetails.accountName}</li>
+                <li><strong>Account number:</strong> {bankDetails.accountNumber}</li>
+                <li><strong>Transfer note:</strong> {`${bankDetails.notePrefix}-${successOrder.orderId}`}</li>
+              </ul>
+              <p>After payment, please notify us or an admin will confirm the payment manually.</p>
+            </div>
+            <div className="checkout-success-actions">
+              <Link to="/" className="button button-primary">
+                Continue shopping
+              </Link>
+              <Link to="/bag" className="button button-outline">
+                View cart
+              </Link>
+            </div>
+          </div>
+        </section>
+      )
+    }
+
     return (
       <section className="checkout-page">
         <div className="checkout-success">
