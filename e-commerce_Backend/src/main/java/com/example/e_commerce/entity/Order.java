@@ -55,6 +55,12 @@ public class Order {
 
     private LocalDateTime createdAt;
 
+    @Column(name = "session_id")
+    private String sessionId;
+
+    @Column(name = "payment_reference")
+    private String paymentReference;
+
     @OneToMany(
             mappedBy = "order",
             cascade = CascadeType.ALL,

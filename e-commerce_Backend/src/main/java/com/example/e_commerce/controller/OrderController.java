@@ -41,4 +41,14 @@ public class OrderController {
                 .code(200)
                 .message("Updated Order status").result(orderService.updateOrderStatus(id, request)).build();
     }
+
+    @PostMapping("/admin/{id}/confirm-payment")
+    public ApiResponse<OrderResponse> confirmPayment(
+            @PathVariable Long id,
+            @RequestParam(required = false) String paymentReference
+    ) {
+        OrderResponse resp = orderService.confirmPayment(id, paymentReference);
+        return ApiResponse.<OrderResponse>builder().result(resp).message("Payment confirmed").code(200).build();
+    }
 }
+

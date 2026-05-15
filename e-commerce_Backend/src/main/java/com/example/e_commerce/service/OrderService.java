@@ -15,4 +15,6 @@ public interface OrderService {
     OrderResponse getOrderById(Long orderId);
 
     OrderResponse updateOrderStatus(Long orderId, UpdateOrderStatusRequest request) throws BadRequestException;
+
+    OrderResponse confirmPayment(Long orderId, String paymentReference);
 }
