@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 @RestController
 @RequestMapping("/api/sku")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
+@CrossOrigin(originPatterns = {"http://localhost:*", "http://127.0.0.1:*", "https://*.up.railway.app"}, allowCredentials = "true")
 public class SkuController {
 
     private final SkuService skuService;

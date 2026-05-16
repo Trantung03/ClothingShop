@@ -18,6 +18,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Comparator;
 import java.util.List;
@@ -35,9 +37,12 @@ public class ProductServiceImpl implements ProductService {
 
     private final CategoryService categoryService;
 
+    private static final Logger log = LoggerFactory.getLogger(ProductServiceImpl.class);
+
     @Override
     @Transactional(readOnly = true)
     public List<ProductListResponse> getProducts(int page, int size, Long categoryId, Long minPrice, Long maxPrice, String search) {
+        log.debug("ProductService.getProducts params: page={}, size={}, categoryId={}, minPrice={}, maxPrice={}, search={}", page, size, categoryId, minPrice, maxPrice, search);
         PageRequest pageable = PageRequest.of(page, size);
         Page<Product> productPage;
         if (categoryId == null) {
@@ -46,6 +51,7 @@ public class ProductServiceImpl implements ProductService {
             List<Long> categoryIds = categoryService.getSelfAndDescendantCategoryIds(categoryId);
             productPage = productRepository.findProductCatalogInCategoryIds(categoryIds, minPrice, maxPrice, search, pageable);
         }
+        log.debug("ProductService.getProducts returning {} items", productPage.getNumberOfElements());
         return productPage.stream().map(this::toProductListResponse).toList();
     }
 

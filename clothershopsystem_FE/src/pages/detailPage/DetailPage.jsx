@@ -4,7 +4,7 @@ import heroImage from '../../assets/hero.png'
 import { fetchProductDetail, fetchProductImg } from './service'
 import { addToCart, syncBagCountFromCart } from '../bag/service'
 import sizeGuideImg from '../../assets/ShoesSize.png'
-import './DetailPage.css'
+import './detailPage.css'
 
 function norm(s) {
   return (s ?? '').toString().trim()
