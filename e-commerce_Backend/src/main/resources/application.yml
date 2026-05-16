@@ -9,8 +9,7 @@ spring:
   application:
     name: ecommerce
   datasource:
-    # Sử dụng biến DB_HOST, mặc định là localhost.
-    # Khi chạy Docker bạn sẽ truyền là host.docker.internal
+
     url: jdbc:mysql://${DB_HOST:localhost}:3306/ecommerce?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:root}
@@ -29,8 +28,8 @@ spring:
     enabled: true
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME:tungtshe176201@fpt.edu.vn}
-    password: ${MAIL_PASSWORD:fzym btqd ubsh dydv}
+    username: ${YOUR_MAIL_USERNAME}
+    password: ${YOUR_MAIL_PASSWORD}
     properties:
       mail:
         smtp:
